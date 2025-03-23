@@ -58,3 +58,19 @@ def delete_short_url(short_code):
         return jsonify({"error": "Short URL not found"}), 404
     
     return jsonify({"message": "Short URL deleted successfully"}), 204
+@app.route('/shorten/<short_code>', methods=['PUT'])
+def update_short_url(short_code):
+    data = request.json
+    new_url = data.get("url")
+    if not new_url:
+        return jsonify({"error": "New URL is required"}), 400
+    
+    result = urls_collection.update_one(
+        {"shortCode": short_code},
+        {"$set": {"url": new_url}}
+    )
+    
+    if result.matched_count == 0:
+        return jsonify({"error": "Short URL not found"}), 404
+    
+    return jsonify({"message": "URL updated successfully"}), 200
