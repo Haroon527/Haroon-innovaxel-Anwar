@@ -74,3 +74,14 @@ def update_short_url(short_code):
         return jsonify({"error": "Short URL not found"}), 404
     
     return jsonify({"message": "URL updated successfully"}), 200
+@app.route('/shorten/<short_code>/stats', methods=['GET'])
+def get_url_statistics(short_code):
+    url_data = find_url_by_short_code(short_code)
+    if not url_data:
+        return jsonify({"error": "Short URL not found"}), 404
+    
+    return jsonify({
+        "shortCode": url_data["shortCode"],
+        "url": url_data["url"],
+        "accessCount": url_data["accessCount"]
+    }), 200
