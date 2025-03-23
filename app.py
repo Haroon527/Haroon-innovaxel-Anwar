@@ -85,3 +85,6 @@ def get_url_statistics(short_code):
         "url": url_data["url"],
         "accessCount": url_data["accessCount"]
     }), 200
+@app.route('/')
+def home():
+    return render_template('index.html')
