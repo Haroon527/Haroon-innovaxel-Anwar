@@ -43,3 +43,11 @@ def create_short_url():
         "url": original_url,
         "shortCode": short_code
     }), 201
+@app.route('/<short_code>', methods=['GET'])
+def redirect_to_url(short_code):
+    url_data = find_url_by_short_code(short_code)
+    if not url_data:
+        return jsonify({"error": "Short URL not found"}), 404
+    
+    urls_collection.update_one({"shortCode": short_code}, {"$inc": {"accessCount": 1}})
+    return redirect(url_data["url"])
