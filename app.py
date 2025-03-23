@@ -4,3 +4,6 @@ import random
 import string
 
 app = Flask(__name__)
+client = MongoClient("mongodb://localhost:27017/")
+db = client["url_shortener"]
+urls_collection = db["urls"]
