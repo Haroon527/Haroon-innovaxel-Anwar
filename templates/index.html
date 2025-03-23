@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f9;
+        }
+        h3 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #e9ecef;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .success {
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <!-- Shorten URL Form -->
+    <form id="shortenForm">
+        <h3>Create Short URL</h3>
+        <input type="url" id="urlInput" placeholder="Enter a long URL" required>
+        <button type="submit">Shorten URL</button>
+    </form>
+
+    <!-- Update URL Form -->
+    <form id="updateForm">
+        <h3>Update URL</h3>
+        <input type="text" id="shortCodeInput" placeholder="Enter short code" required>
+        <input type="url" id="newUrlInput" placeholder="Enter new URL" required>
+        <button type="submit">Update URL</button>
+    </form>
+
+    <!-- Stats Form -->
+    <form id="statsForm">
+        <h3>Get URL Statistics</h3>
+        <input type="text" id="statsShortCodeInput" placeholder="Enter short code" required>
+        <button type="submit">Get Stats</button>
+    </form>
+
+    <!-- Delete Form -->
+    <form id="deleteForm">
+        <h3>Delete URL</h3>
+        <input type="text" id="deleteShortCodeInput" placeholder="Enter short code" required>
+        <button type="submit">Delete URL</button>
+    </form>
+
+    <div class="result" id="result" style="display: none;">
+        <p id="resultText"></p>
+    </div>
+
+    <script>
+        // Helper function to display results
+        function showResult(message, isError = false) {
+            const resultDiv = document.getElementById('result');
+            const resultText = document.getElementById('resultText');
+            resultText.innerHTML = message;
+            resultText.className = isError ? 'error' : 'success';
+            resultDiv.style.display = 'block';
+        }
+
+        // Generic function to handle form submissions
+        async function handleFormSubmit(url, method, body = null) {
+            try {
+                const options = { method, headers: { 'Content-Type': 'application/json' } };
+                if (body) options.body = JSON.stringify(body);
+
+                const response = await fetch(url, options);
+                const data = await response.json();
+
+                if (response.ok) {
+                    return { success: true, data };
+                } else {
+                    return { success: false, error: data.error || 'An error occurred' };
+                }
+            } catch (error) {
+                return { success: false, error: 'An error occurred' };
+            }
+        }
+
+        // Form handlers
+        document.getElementById('shortenForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const url = document.getElementById('urlInput').value;
+            const result = await handleFormSubmit('/shorten', 'POST', { url });
+
+            if (result.success) {
+                const shortUrl = `${window.location.origin}/${result.data.shortCode}`;
+                showResult(`Shortened URL: <a href="${shortUrl}" target="_blank">${shortUrl}</a>`);
+                document.getElementById('urlInput').value = '';
+            } else {
+                showResult(result.error, true);
+            }
+        });
+
+        document.getElementById('updateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const shortCode = document.getElementById('shortCodeInput').value;
+            const newUrl = document.getElementById('newUrlInput').value;
+            const result = await handleFormSubmit(`/shorten/${shortCode}`, 'PUT', { url: newUrl });
+
+            if (result.success) {
+                showResult('URL updated successfully');
+                document.getElementById('shortCodeInput').value = '';
+                document.getElementById('newUrlInput').value = '';
+            } else {
+                showResult(result.error, true);
+            }
+        });
+
+        document.getElementById('statsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const shortCode = document.getElementById('statsShortCodeInput').value;
+            const result = await handleFormSubmit(`/shorten/${shortCode}/stats`, 'GET');
+
+            if (result.success) {
+                const { shortCode, url, accessCount } = result.data;
+                showResult(`Short Code: ${shortCode}<br>Original URL: ${url}<br>Access Count: ${accessCount}`);
+                document.getElementById('statsShortCodeInput').value = '';
+            } else {
+                showResult(result.error, true);
+            }
+        });
+
+        document.getElementById('deleteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const shortCode = document.getElementById('deleteShortCodeInput').value;
+
+            try {
+                const response = await fetch(`/shorten/${shortCode}`, { method: 'DELETE' });
+
+                if (response.status === 204) {
+                    // Handle 204 No Content response
+                    showResult('URL deleted successfully');
+                    document.getElementById('deleteShortCodeInput').value = '';
+                } else {
+                    // Handle other responses
+                    const data = await response.json();
+                    showResult(data.error || 'An error occurred', true);
+                }
+            } catch (error) {
+                showResult('An error occurred', true);
+            }
+        });
+    </script>
+</body>
+</html>
