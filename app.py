@@ -51,3 +51,10 @@ def redirect_to_url(short_code):
     
     urls_collection.update_one({"shortCode": short_code}, {"$inc": {"accessCount": 1}})
     return redirect(url_data["url"])
+@app.route('/shorten/<short_code>', methods=['DELETE'])
+def delete_short_url(short_code):
+    result = urls_collection.delete_one({"shortCode": short_code})
+    if result.deleted_count == 0:
+        return jsonify({"error": "Short URL not found"}), 404
+    
+    return jsonify({"message": "Short URL deleted successfully"}), 204
